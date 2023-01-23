@@ -1,10 +1,8 @@
-from tkinter import ttk
 from tkinter.ttk import Combobox
 import psycopg2
 from tkinter import *
 import row as row
 import requests
-from tkinter import PhotoImage
 
 con = psycopg2.connect(
     host='localhost',  # De host waarop je database runt
@@ -13,7 +11,17 @@ con = psycopg2.connect(
     password='4+sgX3492ZT'  # Wachtwoord die je opgaf bij installatie
     # port=5432 runt standaard op deze port en is alleen nodig als je de port handmatig veranderd
 )
+cur = con.cursor()
+cur.execute("select bericht.tekst, bericht.naam,  bericht.station_city, bericht.id from bericht INNER JOIN beoordeling ON bericht.beoordelingid = beoordeling.beoordelingid where goedkeuring is true ORDER BY id DESC limit 5")
+rows = cur.fetchall()
 
+for row in rows:
+    bericht = row[1]
+
+    print(row)
+con.commit()
+#Cursor en connectie sluiten (en committen)
+cur.close()
 
 cur = con.cursor()
 cur.execute("select station_service.station_city, station_service.ov_bike, station_service.elevator, station_service.toilet, station_service.park_and_ride from station_service INNER JOIN bericht ON station_service.station_city = bericht.station_city")
@@ -42,13 +50,11 @@ for row in rows:
         park_and_ride = "Er is een P&R aanwezig"
     else:
         park_and_ride = "Er is GEEN P&R aanwezig"
-#    print(station_stad, '\n', ov_fiets, '\n', lift, '\n', toilet, '\n', park_and_ride)
-#    print('<br>')
+    print(station_stad, '\n', ov_fiets, '\n', lift, '\n', toilet, '\n', park_and_ride)
+    print('<br>')
 
 con.commit()
-
-
-
+cur.close()
 
 #weather api en opvragen
 base_url = "http://api.openweathermap.org/data/2.5/weather?"
@@ -67,6 +73,23 @@ current_humidity = str(y["humidity"])
 z = x["weather"]
 weather_description = z[0]["description"]
 
+def show_weather():
+    print("Weersvoorspelling voor", station_stad, '\n',
+          "Huidige temperatuur is", current_temperature, "graden Celsius", '\n',
+          "Gevoelstemperatuur is", feelslike_temperature, "graden Celsius", '\n',
+          "Minimum temperatuur is", min_temperature, "graden Celsius", '\n',
+          "Maximum temperatuur is", max_temperature, "graden Celsius", '\n',
+          "Huidige druk is", current_pressure, "hPa", '\n',
+          "Huidige luchtvochtigheid is", current_humidity, "%", '\n',
+          "Weersbeschrijving is:", weather_description, '\n')
+
+def show_last_messages():
+    print("Laatste 5 berichten:")
+    for row in rows:
+        print(row[0], "-", row[1], "-", row[2], "-", row[3])
+        print('<br>')
+
+
 # Hier begint de GUI
 
 root = Tk()
@@ -78,28 +101,28 @@ root.configure(background="gold")
 message_label = Label(root, text="Naam + Bericht:", background='#222373', foreground='#FEFFF7',font=('Helvetica',12, 'bold italic'))
 message_label.grid(row=1, column=0, padx=10, pady=10)
 
-message_listbox = Listbox(root, width=35, height=5)
+message_listbox = Listbox(root, width=35, height=5, borderwidth=3, relief="sunken")
 message_listbox.grid(row=1, column=1, padx=10, pady=10, columnspan=2)
 
 # Weer
 weather_label = Label(root, text="Weersvoorspelling:", background='#222373', foreground='#FEFFF7',font=('Helvetica',12, 'bold italic'))
 weather_label.grid(row=4, column=0, padx=10, pady=10)
 
-weather_listbox = Listbox(root, width=35, height=10)
+weather_listbox = Listbox(root, width=30, height=11, borderwidth=3, relief="sunken")
 weather_listbox.grid(row=4, column=1, padx=10, pady=10, columnspan=2)
 
 # Faciliteiten
 facilities_label = Label(root, text="Faciliteiten:", background='#222373', foreground='#FEFFF7',font=('Helvetica',12, 'bold italic'))
 facilities_label.grid(row=3, column=0, padx=10, pady=10)
 
-facilities_listbox = Listbox(root, width=25, height=5)
+facilities_listbox = Listbox(root, width=25, height=5, borderwidth=3, relief="sunken")
 facilities_listbox.grid(row=3, column=1, padx=10, pady=10, columnspan=2)
 
 # Station
 station_label = Label(root, text="Stations:", background='#222373', foreground='#FEFFF7', font=('Helvetica',12, 'bold italic'))
 station_label.grid(row=2, column=0, padx=10, pady=10)
 
-station_listbox = Listbox(root, width=20, height=5)
+station_listbox = Listbox(root, width=20, height=5, borderwidth=3, relief="sunken")
 station_listbox.grid(row=2, column=1, padx=10, pady=10, columnspan=2)
 cur = con.cursor()
 cur.execute("select bericht.tekst, bericht.naam,  bericht.station_city, bericht.id from bericht INNER JOIN beoordeling ON bericht.beoordelingid = beoordeling.beoordelingid where goedkeuring is true ORDER BY id DESC limit 5")
@@ -129,5 +152,6 @@ facilities_listbox.insert(0,"Dit gaat over " + city_name, ov_fiets, lift, toilet
 quit_button = Button(root, text="Sluiten", command=root.quit, background='#222373', foreground='#FEFFF7', font=('Helvetica',12, 'bold italic'))
 quit_button.grid(row=5, column=2, padx=10, pady=10)
 
-root.mainloop()
 
+
+root.mainloop()
