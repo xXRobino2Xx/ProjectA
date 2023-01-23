@@ -4,27 +4,29 @@ from datetime import date, datetime
 from tkinter.messagebox import showinfo
 import psycopg2
 import time
+from tkinter import ttk
+from tkinter.ttk import Combobox
 
 def clicked():
     global con
-    naam1 = naam.get()
-    bericht1 = bericht.get()
-    print(naam1, bericht1)
+    namen = naam.get()
+    berichten = bericht.get()
+    print(namen, berichten)
 
-    if len(naam1) == 0:
-        naam1 = 'Anoniem'
-    if len(bericht1) > 140:  # Input van gebruiker is te lang
+    if len(namen) == 0:
+        namen = 'Anoniem'
+    if len(berichten) > 140:  # Input van gebruiker is te lang
         showinfo(title='popup', message="Uw bericht is te lang!")
-    elif len(bericht1) <= 0:  # Input van gebruiker is te kort
+    elif len(berichten) <= 0:  # Input van gebruiker is te kort
         showinfo(title='popup', message="Uw bericht is te kort!")
     else:  # input van gebruiker is goed\
         showinfo(title='popup', message="Uw bericht is verzonden en wordt beoordeeld!")
 
         datum = date.today()
         t = time.localtime()
-        tijd = time.strftime("%H:%M:%S", t)
+        tijd= time.strftime("%H:%M:%S", t)
 
-        stationlijst = (
+        stationenlijst = (
 'Arnhem',
 'Almere',
 'Amersfoort',
@@ -66,7 +68,7 @@ def clicked():
 'Zwolle',
 'Zutphen',
 )
-        stationnaam = random.choice(stationlijst)
+        stations = random.choice(stationenlijst)
 
         con = psycopg2.connect(
             host='localhost',  # De host waarop je database runt
@@ -78,8 +80,8 @@ def clicked():
 
     cur = con.cursor()
 
-    cur.execute("INSERT INTO bericht (tekst, datum, naam, station_city, tijd) VALUES (%s, %s, %s, %s, %s)",
-            (bericht1, datum, naam1, stationnaam, tijd))
+    cur.execute("INSERT INTO bericht (bericht, date, naam, station_city, time) VALUES (%s, %s, %s, %s, %s)",
+            (berichten, datum, namen, stations, tijd))
     con.commit()
     # Cursor en connectie sluiten (en committen)
     cur.close()
@@ -91,6 +93,7 @@ def clicked():
 hoofdscherm = Tk()
 hoofdscherm.title("Ns zuil")
 hoofdscherm.geometry("950x600")
+hoofdscherm.config(bg='gold')
 nsLogo = Label(master=hoofdscherm,
               text='Feedback scherm',
               background='#222373',

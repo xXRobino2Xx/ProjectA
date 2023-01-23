@@ -1,6 +1,7 @@
 from datetime import date
 from tkinter import *
 from tkinter.messagebox import showinfo
+from tkinter import ttk
 from tkinter.ttk import Combobox
 import psycopg2
 import time
@@ -11,12 +12,12 @@ t = time.localtime()
 tijdstip = time.strftime("%H:%M:%S", t)
 
 
-def accept():
+def accept():                                                                   #wat er gebeurt als je op accept klikt
     modnaam = comboExample.get()
     modopmerking = opmerking.get('1.0', END)
-    if modnaam == '':
-        showinfo(title='Error', message="Selecteer moderator")
-    else:
+    if modnaam == '':                                                           #hier moderatornaam selecteren before accepteren
+        showinfo(title='Error', message="Selecteer moderator")                  #error voor niet geselecteerd
+    else:                                                                       #connectie maken met database
         con = psycopg2.connect(
             host='localhost',  # De host waarop je database runt
             database='nszuil',  # Database naam
@@ -26,18 +27,18 @@ def accept():
         )
         cur = con.cursor()
         cur.execute(
-            "SELECT id FROM moderator WHERE moderatornaam = (%s)", (modnaam,))
+            "SELECT id FROM moderator WHERE moderatornaam = (%s)", (modnaam,))                      #moderatorID selecteren van de ingevoerde naam in verband met privacy
         modID = (cur.fetchone()[0])
         cur.execute(
-            "INSERT INTO beoordeling (goedkeuring, datum, tijd, moderatorid, opmerking) VALUES (%s, %s, %s, %s, %s)",
+            "INSERT INTO beoordeling (goedkeuring, datum, tijd, moderatorid, opmerking) VALUES (%s, %s, %s, %s, %s)",       #als het bericht is geaccepteerd het moderator id een het bericht invoeren in de database tabel beoordeling
             (True, datum, tijdstip, modID, modopmerking))
         con.commit()
         cur.execute(
-            "SELECT beoordelingid FROM beoordeling WHERE goedkeuring = (%s) AND datum = (%s) AND tijd = (%s) AND moderatorid = (%s) AND opmerking = (%s)",
+            "SELECT beoordelingid FROM beoordeling WHERE goedkeuring = (%s) AND datum = (%s) AND tijd = (%s) AND moderatorid = (%s) AND opmerking = (%s)",          #gekeurde berichten ophalen zodat in de volgende regele kan aanpassen in de tabel berichten
             (True, datum, tijdstip, modID, modopmerking))
         beoordelingID = (cur.fetchone()[0])
         cur.execute(
-            "UPDATE bericht SET beoordelingid = (%s) WHERE bericht.id = (%s)", (beoordelingID, berichtid)
+            "UPDATE bericht SET beoordelingid = (%s) WHERE bericht.id = (%s)", (beoordelingID, berichtid)           #aandpassen in berichten wanneer het bericht gekeurd is.
         )
         con.commit()
 
@@ -54,11 +55,11 @@ def reject():
     modnaam = comboExample.get()
     modopmerking = opmerking.get('1.0', END)
     if modnaam == '':
-        showinfo(title='Error', message="Selecteer een moderator")
+        showinfo(title='Error', message="Selecteer een moderator")                      #moderator naam moet geselecteerd zijn.
     elif len(modopmerking) <= 1:
-        showinfo(title='Error', message="Reden geven voor afkeuren bericht")
+        showinfo(title='Error', message="Reden geven voor afkeuren bericht")            #reden moet worden gegeven bij afkeuren project
     else:
-        con = psycopg2.connect(
+        con = psycopg2.connect(                                                         #connectie maken met database
             host='localhost',  # De host waarop je database runt
             database='nszuil',  # Database naam
             user='postgres',  # Als wat voor gebruiker je connect, standaard postgres als je niets veranderd
@@ -67,18 +68,18 @@ def reject():
         )
         cur = con.cursor()
         cur.execute(
-            "SELECT id FROM moderator WHERE moderatornaam = (%s)", (modnaam,))
+            "SELECT id FROM moderator WHERE moderatornaam = (%s)", (modnaam,))                  #id selecteren
         modID = (cur.fetchone()[0])
         cur.execute(
-            "INSERT INTO beoordeling (goedkeuring, datum, tijd, moderatorid, opmerking) VALUES (%s, %s, %s, %s, %s)",
+            "INSERT INTO beoordeling (goedkeuring, datum, tijd, moderatorid, opmerking) VALUES (%s, %s, %s, %s, %s)",           #als het bericht is geweigerd het moderator id een het bericht invoeren in de database tabel beoordeling
             (False, datum, tijdstip, modID, modopmerking))
         con.commit()
         cur.execute(
-            "SELECT beoordelingid FROM beoordeling WHERE goedkeuring = (%s) AND datum = (%s) AND tijd = (%s) AND moderatorid = (%s) AND opmerking = (%s)",
+            "SELECT beoordelingid FROM beoordeling WHERE goedkeuring = (%s) AND datum = (%s) AND tijd = (%s) AND moderatorid = (%s) AND opmerking = (%s)",      #gekeurde berichten ophalen zodat in de volgende regele kan aanpassen in de tabel berichten
             (False, datum, tijdstip, modID, modopmerking))
         beoordelingID = (cur.fetchone()[0])
         cur.execute(
-            "UPDATE bericht SET beoordelingid = (%s) WHERE bericht.id = (%s)", (beoordelingID, berichtid)
+            "UPDATE bericht SET beoordelingid = (%s) WHERE bericht.id = (%s)", (beoordelingID, berichtid)           #aandpassen in berichten wanneer het bericht gekeurd is.
         )
         con.commit()
 
@@ -90,10 +91,10 @@ def reject():
         con.close()
 
 
-def nieuwbericht():
+def nieuwbericht():                 #module voor selecteren van nieuw bericht als het vorige bericht is gekeurd
     global berichtid
     global bericht
-    con = psycopg2.connect(
+    con = psycopg2.connect(             #connectie maken
         host='localhost',  # De host waarop je database runt
         database='nszuil',  # Database naam
         user='postgres',  # Als wat voor gebruiker je connect, standaard postgres als je niets veranderd
@@ -103,17 +104,19 @@ def nieuwbericht():
 
     cur = con.cursor()
     cur.execute(
-        "SELECT bericht.id, bericht.tekst, bericht.naam, bericht.beoordelingid FROM bericht WHERE bericht.beoordelingid IS NULL ORDER BY datum")
+        "SELECT bericht.id, bericht.bericht, bericht.naam, bericht.beoordelingid FROM bericht WHERE bericht.beoordelingid IS NULL ORDER BY date")           #bericht selecteren wat beoordeeld moet worden
 
-    result = cur.fetchone()
+    result = cur.fetchone()                 #bericht invullen in de GUI
     if result:
         naam = result[2]
         bericht = result[1].rstrip()
         berichtid = result[0]
         naamlabel2.config(text=naam)
         berichtlabel2.config(text=bericht)
-    else:
+    else:                                                       #wanneer er geen bericht meer is
         showinfo(title='Melding', message="Alle berichten zijn beoordeeld.\nApp wordt gesloten")
+#        naam.delete(0, END)
+#        bericht.delete(0, END)
 
     cur.close()
     con.close()
